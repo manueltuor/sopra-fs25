@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * User Controller
  * This class is responsible for handling all REST request that are related to
@@ -21,6 +24,7 @@ import java.util.List;
 @RestController
 public class UserController {
 
+  private static final Logger logger = LoggerFactory.getLogger(UserController.class);
   private final UserService userService;
 
   UserController(UserService userService) {
@@ -53,5 +57,31 @@ public class UserController {
     User createdUser = userService.createUser(userInput);
     // convert internal representation of user back to API
     return DTOMapper.INSTANCE.convertEntityToUserGetDTO(createdUser);
+  }
+
+  @PostMapping("/login/auth")
+  @ResponseStatus(HttpStatus.OK)
+  @ResponseBody
+  public UserGetDTO loginUser(@RequestBody UserPostDTO userPostDTO) {
+    // convert API user to internal representation
+    
+    logger.info("Received request to login user: {}", userPostDTO.getUsername());
+
+    User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
+
+    // login user
+    User loggedInUser = userService.loginUser(userInput);
+    // convert internal representation of user back to API
+    return DTOMapper.INSTANCE.convertEntityToUserGetDTO(loggedInUser);
+  }
+
+  @GetMapping("/users/{id}")
+  @ResponseStatus(HttpStatus.OK)
+  @ResponseBody
+  public UserGetDTO getUserById(@PathVariable Long id) {
+      System.out.println(String.format("Received request for user with ID: %d", id));
+      User user = userService.getUserById(id);
+      System.out.println(String.format("Found user: {}", user));
+      return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
   }
 }
