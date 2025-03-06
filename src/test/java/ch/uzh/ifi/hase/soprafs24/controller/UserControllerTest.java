@@ -119,13 +119,13 @@ public class UserControllerTest {
   }
   @Test
   void userId_PUT404() throws Exception {
-      // Test case where user doesn't exist
       UserPutDTO updatedDTO = new UserPutDTO();
       updatedDTO.setUsername("nonExistentUsername");
       mockMvc.perform(put("/users/99999").contentType(MediaType.APPLICATION_JSON)
             .content(asJsonString(updatedDTO))
             .header("Authorization", authTOKEN))
             .andExpect(status().isNotFound());
+    // nonexistent user test
   }
 
   @Test

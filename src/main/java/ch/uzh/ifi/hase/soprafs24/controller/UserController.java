@@ -36,7 +36,6 @@ import ch.uzh.ifi.hase.soprafs24.service.UserService;
  */
 @RestController
 public class UserController {
-
   private static final Logger logger = LoggerFactory.getLogger(UserController.class);
   private final UserService userService;
 
@@ -60,15 +59,6 @@ public class UserController {
     return userGetDTOs;
   }
 
-  @PostMapping("/users")
-  @ResponseStatus(HttpStatus.CREATED)
-  @ResponseBody
-  public UserGetDTO createUser(@RequestBody UserPostDTO userPostDTO) {
-    User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
-    User createdUser = userService.createUser(userInput);
-    return DTOMapper.INSTANCE.convertEntityToUserGetDTO(createdUser);
-  }
-
   @PostMapping("/login/auth")
   @ResponseStatus(HttpStatus.OK)
   @ResponseBody
@@ -79,20 +69,42 @@ public class UserController {
     return DTOMapper.INSTANCE.convertEntityToUserGetDTO(loggedInUser);
   }
 
+  @PostMapping("/users")
+  @ResponseStatus(HttpStatus.CREATED)
+  @ResponseBody
+  public UserGetDTO createUser(@RequestBody UserPostDTO userPostDTO) {
+    User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
+    User createdUser = userService.createUser(userInput);
+    return DTOMapper.INSTANCE.convertEntityToUserGetDTO(createdUser);
+  }
+
+  @GetMapping("/users/{id}")
+  @ResponseStatus(HttpStatus.OK)
+  @ResponseBody
+  public UserGetDTO getUserById(@PathVariable Long id, @RequestHeader(value="Authorization", required=false) String authToken ) {
+      User authenticatedUser = userService.getUserByToken(authToken);
+      if (authToken == null) {
+          throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+      }
+      if ( authenticatedUser == null) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Missing token");
+      }
+      System.out.println(String.format("GET request for user with ID: %d", id));
+      User user = userService.getUserById(id);
+      return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
+  }
+
   @PutMapping("/users/logout")
   @ResponseStatus(HttpStatus.OK)
   public ResponseEntity<Void> logoutUser(@RequestBody LogOutDTO logOutDTO) {
     try {
         User user = userService.getUserById(logOutDTO.getId());
-        System.out.println("Received request to logout user: " + logOutDTO.getId());
         if (user == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-        // Validate the token
         if (!user.getToken().equals(logOutDTO.getToken())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        // set status to offline
         userService.logoutUser(user);
 
         return ResponseEntity.noContent().build();
@@ -104,33 +116,15 @@ public class UserController {
     }
 }
 
-  @GetMapping("/users/{id}")
-  @ResponseStatus(HttpStatus.OK)
-  @ResponseBody
-  public UserGetDTO getUserById(@PathVariable Long id, @RequestHeader(value="Authorization", required=false) String authToken ) {
-      User authenticatedUser = userService.getUserByToken(authToken);
-      if (authToken == null) {
-          throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or missing token");
-      }
-      if ( authenticatedUser == null) {
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid or missing token");
-      }
-      System.out.println(String.format("Received request for user with ID: %d", id));
-      User user = userService.getUserById(id);
-      System.out.println(String.format("Found user: {}", user));
-      return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
-  }
-
   @PutMapping("/users/{id}")
   public ResponseEntity<?> editUser(@PathVariable Long id, @RequestBody UserPutDTO userPutDTO,
   @RequestHeader(value="Authorization", required=false) String authToken) {
     User authenticatedUser = userService.getUserByToken(authToken);
     if (authToken == null) {
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or missing token");
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
     }
-
     if ( authenticatedUser == null) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid or missing token");
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Missing token");
     }
     User user = userService.getUserById(id);
 
@@ -145,10 +139,7 @@ public class UserController {
       } catch (IllegalArgumentException e) {
           return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
       } catch (Exception e) {
-
-          return ResponseEntity
-              .status(HttpStatus.INTERNAL_SERVER_ERROR)
-              .body(Map.of("message", e.getMessage()));
+          return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", e.getMessage()));
       }
   }
 }

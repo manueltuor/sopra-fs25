@@ -85,7 +85,7 @@ public class UserService {
     }
 
     if (!userByUsername.getPassword().equals(userToBeLoggedIn.getPassword())) {
-      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Password is incorrect");
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Password incorrect");
     }
 
     userByUsername.setStatus(UserStatus.ONLINE);
@@ -110,16 +110,14 @@ public class UserService {
     if (userPutDTO.getUsername() != null && !userPutDTO.getUsername().equals(userToBeEdited.getUsername())) {
         User existingUser = userRepository.findByUsername(userPutDTO.getUsername());
         if (existingUser != null && !existingUser.getId().equals(userToBeEdited.getId())) {
-            throw new IllegalArgumentException("Username already exists");
+            throw new IllegalArgumentException("Username exists already");
         }
     }
 
-    // check that username not null or empty
     if (userPutDTO.getUsername() == null || userPutDTO.getUsername().trim().isEmpty()) {
         throw new IllegalArgumentException("Username cannot be empty");
     }
 
-    // Update the user's details
     if (userPutDTO.getUsername() != null) {
         userToBeEdited.setUsername(userPutDTO.getUsername());
     }
@@ -127,8 +125,6 @@ public class UserService {
     if (userPutDTO.getBirthday() != null) {
         userToBeEdited.setBirthday(userPutDTO.getBirthday());
     }
-
-    // Save the updated user
     return userRepository.save(userToBeEdited);
   }
 

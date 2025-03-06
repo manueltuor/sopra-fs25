@@ -107,14 +107,6 @@ public class User implements Serializable {
     this.date = date;
   }
 
-  public LocalDate getBirthday() {
-    return birthday;
-  }
-
-  public void setBirthday(LocalDate birthday) {
-    this.birthday = birthday;
-  }
-
   @Override
   public String toString() {
     return "User{" +
@@ -127,5 +119,13 @@ public class User implements Serializable {
         ", date=" + date +
         ", birthday=" + birthday +
         '}';
+  }
+
+  public LocalDate getBirthday() {
+    return birthday;
+  }
+
+  public void setBirthday(LocalDate birthday) {
+    this.birthday = birthday;
   }
 }
