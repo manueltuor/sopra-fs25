@@ -30,7 +30,6 @@ import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO;
 public class UserService {
 
   private final Logger log = LoggerFactory.getLogger(UserService.class);
-
   private final UserRepository userRepository;
 
   @Autowired
@@ -47,11 +46,8 @@ public class UserService {
     newUser.setStatus(UserStatus.ONLINE);
     newUser.setDate(LocalDate.now());
     checkIfUserExists(newUser);
-    // saves the given entity but data is only persisted in the database once
-    // flush() is called
     newUser = userRepository.save(newUser);
     userRepository.flush();
-
     log.debug("Created Information for User: {}", newUser);
     return newUser;
   }
@@ -118,15 +114,10 @@ public class UserService {
         }
     }
 
-    // Validate username is not null or empty
+    // check that username not null or empty
     if (userPutDTO.getUsername() == null || userPutDTO.getUsername().trim().isEmpty()) {
         throw new IllegalArgumentException("Username cannot be empty");
     }
-
-    // Validate birthday is not in the future
-    //if (userPutDTO.getBirthday() != null && userPutDTO.getBirthday().isAfter(LocalDate.now())) {
-    //    throw new IllegalArgumentException("Birthday cannot be in the future");
-    //}
 
     // Update the user's details
     if (userPutDTO.getUsername() != null) {

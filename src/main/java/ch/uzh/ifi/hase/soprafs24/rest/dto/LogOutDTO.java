@@ -5,17 +5,16 @@ public class LogOutDTO {
     private String token;
     private Long userId;
     
-
     public String getToken() {
         return token;
     }
 
-    public void setToken(String token) {
-        this.token = token;
-    }
-
     public Long getId() {
         return userId;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 
     public void setId(Long id) {

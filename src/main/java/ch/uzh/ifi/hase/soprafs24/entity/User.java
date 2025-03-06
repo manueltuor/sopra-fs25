@@ -1,5 +1,4 @@
 package ch.uzh.ifi.hase.soprafs24.entity;
-
 import java.io.Serializable;
 import java.time.LocalDate;
 
@@ -92,6 +91,14 @@ public class User implements Serializable {
     this.status = status;
   }
 
+  public String getPassword() {
+    return password;
+  }
+
+  public void setPassword(String password) {
+    this.password = password;
+  }
+
   public LocalDate getDate() {
     return date;
   }
@@ -106,14 +113,6 @@ public class User implements Serializable {
 
   public void setBirthday(LocalDate birthday) {
     this.birthday = birthday;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-
-  public void setPassword(String password) {
-    this.password = password;
   }
 
   @Override
