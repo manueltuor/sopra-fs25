@@ -63,7 +63,7 @@ public class UserController {
   @ResponseStatus(HttpStatus.OK)
   @ResponseBody
   public UserGetDTO loginUser(@RequestBody UserPostDTO userPostDTO) {
-    logger.info("Received request to login user: {}", userPostDTO.getUsername());
+    logger.info("Got request to login user: {}", userPostDTO.getUsername());
     User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
     User loggedInUser = userService.loginUser(userInput);
     return DTOMapper.INSTANCE.convertEntityToUserGetDTO(loggedInUser);
