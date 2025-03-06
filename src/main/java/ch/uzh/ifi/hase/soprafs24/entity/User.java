@@ -44,7 +44,7 @@ public class User implements Serializable {
   private LocalDate date;
 
   @Column(nullable = true)
-  private String birthday;
+  private LocalDate birthday;
 
   @Column(nullable = false, unique = true)
   private String token;
@@ -100,11 +100,11 @@ public class User implements Serializable {
     this.date = date;
   }
 
-  public String getBirthday() {
+  public LocalDate getBirthday() {
     return birthday;
   }
 
-  public void setBirthday(String birthday) {
+  public void setBirthday(LocalDate birthday) {
     this.birthday = birthday;
   }
 
