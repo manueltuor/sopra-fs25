@@ -45,131 +45,106 @@ public class UserControllerTest {
   @Autowired
   private UserRepository userRepository;
 
-  private static String ADMIN_TOKEN;
   private static User testUser;
+  private static String authTOKEN;
 
-  // Setup method to create a user for testing
   @BeforeEach
   public void setup() throws Exception {
-      // Clear the database
+      // Clear database + new user
       userRepository.deleteAll();
-      userRepository.flush(); // Ensure deleteAll() is committed
-  
-      // Create new user
+      userRepository.flush();
       User user = new User();
-      user.setUsername("admin");
-      user.setName("admin");
-      user.setPassword("admin");
-      user.setToken(UUID.randomUUID().toString()); // Set the token
+      user.setPassword("kahn");
+      user.setUsername("king");
+      user.setName("kong");
+      user.setToken(UUID.randomUUID().toString());
       user.setStatus(UserStatus.ONLINE);
       user.setDate(LocalDate.now());
-      user.setBirthday(null);
   
-      // Save the user
-      User createdUser = userRepository.saveAndFlush(user); // Force immediate commit
-      ADMIN_TOKEN = createdUser.getToken(); // Store token for authentication
+      // Save and also flush
+      User createdUser = userRepository.saveAndFlush(user);
+      authTOKEN = createdUser.getToken();
       testUser = createdUser;
   
       System.out.println("Setup completed!");
       System.out.println("User ID: " + testUser.getId());
-      System.out.println("Admin Token: " + ADMIN_TOKEN);
+      System.out.println("Admin Token: " + authTOKEN);
   }
 
   @Test
-  void POST_user_201() throws Exception {
+  void user_POST201() throws Exception {
       UserPostDTO userPostDTO = new UserPostDTO();
       userPostDTO.setUsername("testUser");
       userPostDTO.setName("testUser");
       userPostDTO.setPassword("testPassword");
-
-      mockMvc.perform(post("/users")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(asJsonString(userPostDTO)))
-          .andExpect(status().isCreated());
+      mockMvc.perform(post("/users").contentType(MediaType.APPLICATION_JSON).content(asJsonString(userPostDTO))).andExpect(status().isCreated());
   }
 
   @Test
-  void POST_user_409() throws Exception {
-      // Step 1: Create the first user
-      UserPostDTO userPostDTO = new UserPostDTO();
-      userPostDTO.setUsername("testUser");
-      userPostDTO.setName("testUser");
-      userPostDTO.setPassword("testPassword");
-  
-      mockMvc.perform(post("/users")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(asJsonString(userPostDTO)))
-          .andExpect(status().isCreated());
-
-      userRepository.flush();
-  
-      // Verify that the first user was created
-      User firstUser = userRepository.findByUsername("testUser");
-      System.out.println("First User: " + firstUser);
-  
-      // Step 2: Attempt to create a duplicate user
-      UserPostDTO copyUserPostDTO = new UserPostDTO();
-      copyUserPostDTO.setUsername("testUser");
-      copyUserPostDTO.setPassword("testPassword");
-  
-      mockMvc.perform(post("/users")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(asJsonString(copyUserPostDTO)))
-          .andExpect(status().isConflict());
-  }
-
-  @Test
-  void GET_user_id_200() throws Exception {
+  void userId_GET200() throws Exception {
       // Check if the user is in the database
       List<User> users = userRepository.findAll();
       users.forEach(user -> System.out.println("DB User: " + user.getUsername() + ", Token: " + user.getToken()));
   
       System.out.println("Test User: " + testUser);
-      
-      // Verify the token
-      System.out.println("Sent Token: " + ADMIN_TOKEN);   
-      System.out.println("User: " + userRepository.findByToken(ADMIN_TOKEN.trim().replace("\"", "")));
     
       // Use the stored test user for GET request
       mockMvc.perform(get("/users/{id}", testUser.getId())
               .contentType(MediaType.APPLICATION_JSON)
-              .header("Authorization", ADMIN_TOKEN.trim().replace("\"", ""))) // Use the token
+              .header("Authorization", authTOKEN.trim().replace("\"", "")))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.username", is(testUser.getUsername())))
           .andExpect(jsonPath("$.status", is(testUser.getStatus().toString())));
   }
+
   @Test
-  void PUT_user_id_204() throws Exception {
-      // Perform a PUT request to update the user profile
+  void user_POST409() throws Exception {
+      // Create first user
+      UserPostDTO userPostDTO = new UserPostDTO();
+      userPostDTO.setUsername("testUser");
+      userPostDTO.setName("testUser");
+      userPostDTO.setPassword("testPassword");
+      mockMvc.perform(post("/users").contentType(MediaType.APPLICATION_JSON).content(asJsonString(userPostDTO))).andExpect(status().isCreated());
+      //flushing
+      userRepository.flush();
+      User firstUser = userRepository.findByUsername("testUser");
+      System.out.println("First User: " + firstUser);
+  
+      // duplicate user creation
+      UserPostDTO copyUserPostDTO = new UserPostDTO(); // duplicate user
+      copyUserPostDTO.setUsername("testUser");
+      copyUserPostDTO.setPassword("testPassword");
+  
+      mockMvc.perform(post("/users").contentType(MediaType.APPLICATION_JSON).content(asJsonString(copyUserPostDTO))).andExpect(status().isConflict());
+  }
+  @Test
+  void userId_PUT404() throws Exception {
+      // Test case where user doesn't exist
+      UserPutDTO updatedDTO = new UserPutDTO();
+      updatedDTO.setUsername("nonExistentUsername");
+      mockMvc.perform(put("/users/99999").contentType(MediaType.APPLICATION_JSON)
+            .content(asJsonString(updatedDTO))
+            .header("Authorization", authTOKEN))
+            .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void userId_GET404() throws Exception {
+    mockMvc.perform(get("/users/99999")
+        .contentType(MediaType.APPLICATION_JSON)
+        .header("Authorization", authTOKEN))
+    .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void userId_PUT204() throws Exception {
       UserPutDTO updatedDTO = new UserPutDTO();
       updatedDTO.setUsername("updatedUsername");
 
       mockMvc.perform(put("/users/" + testUser.getId())
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(asJsonString(updatedDTO))
-              .header("Authorization", ADMIN_TOKEN)) // Use the token
-          .andExpect(status().isNoContent());
-  }
-
-  @Test
-  void PUT_user_id_404() throws Exception {
-      // Test case where user doesn't exist
-      UserPutDTO updatedDTO = new UserPutDTO();
-      updatedDTO.setUsername("nonExistentUsername");
-
-      mockMvc.perform(put("/users/99999")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(asJsonString(updatedDTO))
-              .header("Authorization", ADMIN_TOKEN)) // Use the token
-          .andExpect(status().isNotFound());
-  }
-
-  @Test
-  void GET_user_id_404() throws Exception {
-    mockMvc.perform(get("/users/99999")
         .contentType(MediaType.APPLICATION_JSON)
-        .header("Authorization", ADMIN_TOKEN)) // Use the token
-    .andExpect(status().isNotFound());
+        .content(asJsonString(updatedDTO))
+        .header("Authorization", authTOKEN)).andExpect(status().isNoContent());
   }
 
 
@@ -201,13 +176,13 @@ public class UserControllerTest {
       user.setDate(LocalDate.now());
       user.setToken(UUID.randomUUID().toString());
 
-      // Persist the user in the database
+      // flush user
       userRepository.saveAndFlush(user);
 
       // when
       MockHttpServletRequestBuilder getRequest = get("/users")
         .contentType(MediaType.APPLICATION_JSON)
-        .header("Authorization", ADMIN_TOKEN);
+        .header("Authorization", authTOKEN);
 
       // then
       mockMvc.perform(getRequest)
