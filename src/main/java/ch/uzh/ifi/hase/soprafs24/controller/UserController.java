@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.LogOutDTO;
@@ -45,7 +47,12 @@ public class UserController {
   @GetMapping("/users")
   @ResponseStatus(HttpStatus.OK)
   @ResponseBody
-  public List<UserGetDTO> getAllUsers() {
+  public List<UserGetDTO> getAllUsers(@RequestHeader (value = "Authorization", required = false) String authToken) {
+    User authenticatedUser = userService.getUserByToken(authToken);
+    if (authToken == null || authenticatedUser == null) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or missing token");
+    }
+
     // fetch all users in the internal representation
     List<User> users = userService.getUsers();
     List<UserGetDTO> userGetDTOs = new ArrayList<>();
@@ -117,7 +124,16 @@ public class UserController {
   @GetMapping("/users/{id}")
   @ResponseStatus(HttpStatus.OK)
   @ResponseBody
-  public UserGetDTO getUserById(@PathVariable Long id) {
+  public UserGetDTO getUserById(@PathVariable Long id, @RequestHeader(value="Authorization", required=false) String authToken ) {
+      User authenticatedUser = userService.getUserByToken(authToken);
+      if (authToken == null) {
+          throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or missing token");
+      }
+
+      if ( authenticatedUser == null) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid or missing token");
+      }
+    
       System.out.println(String.format("Received request for user with ID: %d", id));
       User user = userService.getUserById(id);
       System.out.println(String.format("Found user: {}", user));
@@ -125,8 +141,16 @@ public class UserController {
   }
 
   @PutMapping("/users/{id}")
-  public ResponseEntity<?> editUser(@PathVariable Long id, @RequestBody UserPutDTO userPutDTO) {
+  public ResponseEntity<?> editUser(@PathVariable Long id, @RequestBody UserPutDTO userPutDTO,
+  @RequestHeader(value="Authorization", required=false) String authToken) {
+    User authenticatedUser = userService.getUserByToken(authToken);
+    if (authToken == null) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or missing token");
+    }
 
+    if ( authenticatedUser == null) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid or missing token");
+    }
     User user = userService.getUserById(id);
 
     if (user == null) {
